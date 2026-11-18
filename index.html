@@ -2,94 +2,86 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>STUDIO KONON - Mirip Konon Katanya Ya</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STUDIO KONON V2 - VIDEO</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#0a0a0a;color:#fff;font-family:system-ui}
+*{box-sizing:border-box}body{margin:0;background:#000;color:#fff;font-family:system-ui}
 #top{background:#ffcc00;color:#000;padding:12px;text-align:center;font-weight:900}
-#c{width:100%;height:60vh;display:block;background:#1a1a1a}
-#menu{padding:10px;background:#1e1e1e;height:40vh;overflow:auto}
-select,input,textarea,button{width:100%;padding:10px;margin:4px 0;border-radius:8px;border:none;font-weight:700}
-button{background:#ffcc00;color:#000}
-.row{display:flex;gap:6px}.row>*{flex:1}
+#c{width:100%;height:55vh;display:block;background:#121212}
+#menu{padding:10px;background:#1e1e1e}
+select,input,button{width:100%;padding:10px;margin:4px 0;border-radius:8px;border:none;font-weight:900}
+button{cursor:pointer} .row{display:flex;gap:6px}.row>*{flex:1}
+.rec{background:#ff0000;color:#fff;animation:blink 1s infinite} @keyframes blink{50%{opacity:0.5}}
 small{color:#ffcc00;font-size:11px}
 </style>
 <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
 </head>
 <body>
-<div id="top">👺 STUDIO KONON 3D - ALA @kononkatanyaya</div>
+<div id="top">🎬 STUDIO KONON V2 - BISA REKAM VIDEO</div>
 <canvas id="c"></canvas>
 <div id="menu">
-<small>KARAKTER KAMPUNG:</small>
 <div class="row">
-<select id="kar" onchange="draw()">
-<option value="sobri">Pak Sobri (Peci Coklat)</option>
-<option value="tini">Bu Tini (Hijab)</option>
-<option value="pakrt">Pak RT (Peci Hitam)</option>
-<option value="bocil">Bocil Kampung</option>
-</select>
-<select id="mood" onchange="draw()">
-<option value="biasa">Biasa</option>
-<option value="kaget">Kaget - Mulut Menganga</option>
-<option value="takut">Takut Horor</option>
-<option value="marah">Marah</option>
-</select>
+<select id="kar" onchange="draw()"><option value="sobri">Pak Sobri</option><option value="tini">Bu Tini</option><option value="pakrt">Pak RT</option><option value="bocil">Bocil</option></select>
+<select id="mood" onchange="draw()"><option value="biasa">Biasa</option><option value="kaget">Kaget</option><option value="takut">Takut Horor</option><option value="marah">Marah</option></select>
 </div>
-<small>TEKS KUNING DI VIDEO (kayak screenshot kamu):</small>
-<input id="teks" value="Pak Sobri" oninput="draw()" placeholder="Contoh: jamnya, kembalian, ember kapur">
-<small>JUDUL CERITA:</small>
-<input id="judul" value="ada kampung yang warganya wajib bersin bareng jam 7 pagi">
+<input id="teks" value="Pak Sobri" oninput="draw()">
 <div class="row">
-<button onclick="draw()">🔄 RENDER 3D</button>
-<button onclick="save()" style="background:#00e676">💾 SAVE PNG</button>
+<button onclick="draw()" style="background:#ffcc00;color:#000">🔄 RENDER</button>
+<button onclick="save()" style="background:#00e676">💾 PNG</button>
 </div>
+<button id="recBtn" onclick="toggleRec()" style="background:#ff0000;color:#fff">🔴 MULAI REKAM VIDEO</button>
+<small id="status">Status: Siap rekam. Klik rekam, lalu ganti-ganti karakter/emosi biar jadi video. Max 30 detik buat Shorts.</small>
 </div>
 <script>
-let scene,camera,renderer,group;
+let scene,camera,renderer,group,recorder,chunks=[],isRec=false,stream;
 function init(){
  scene=new THREE.Scene(); scene.background=new THREE.Color(0x121212);
- camera=new THREE.PerspectiveCamera(45, window.innerWidth/(window.innerHeight*0.6),0.1,100); camera.position.set(0,1.1,2.8);
+ camera=new THREE.PerspectiveCamera(45, window.innerWidth/(window.innerHeight*0.55),0.1,100); camera.position.set(0,1.1,2.8);
  renderer=new THREE.WebGLRenderer({canvas:document.getElementById('c'),antialias:true,preserveDrawingBuffer:true});
- renderer.setSize(window.innerWidth, window.innerHeight*0.6);
+ renderer.setSize(window.innerWidth, window.innerHeight*0.55);
  scene.add(new THREE.DirectionalLight(0xffffff,1.2).position.set(2,3,2));
  scene.add(new THREE.AmbientLight(0xffffff,0.9));
  draw();
 }
 function txtSprite(t){
  const cv=document.createElement('canvas'); cv.width=512; cv.height=140;
- const ctx=cv.getContext('2d'); ctx.clearRect(0,0,512,140);
- ctx.fillStyle='#000'; ctx.fillRect(0,0,512,140);
+ const ctx=cv.getContext('2d'); ctx.fillStyle='#000'; ctx.fillRect(0,0,512,140);
  ctx.fillStyle='#ffeb3b'; ctx.font='900 58px Arial'; ctx.textAlign='center'; ctx.fillText(t,256,90);
- ctx.strokeStyle='#000'; ctx.lineWidth=6; ctx.strokeText(t,256,90);
- const tex=new THREE.CanvasTexture(cv); const spr=new THREE.Sprite(new THREE.SpriteMaterial({map:tex})); spr.scale.set(1.6,0.44,1); spr.position.y=-0.15; spr.position.z=0.5; return spr;
+ const tex=new THREE.CanvasTexture(cv); const spr=new THREE.Sprite(new THREE.SpriteMaterial({map:tex})); spr.scale.set(1.6,0.44,1); spr.position.set(0,-0.15,0.5); return spr;
 }
 function draw(){
- if(group) scene.remove(group);
- group=new THREE.Group();
+ if(group) scene.remove(group); group=new THREE.Group();
  const kar=document.getElementById('kar').value; const mood=document.getElementById('mood').value;
- const skin=new THREE.MeshStandardMaterial({color:0xFFD6A0});
- const bajuColor=kar=='tini'?0x6EC6FF:kar=='pakrt'?0x444444:kar=='bocil'?0xFF5252:0xA1887F;
- const baju=new THREE.MeshStandardMaterial({color:bajuColor});
+ const skin=new THREE.MeshStandardMaterial({color:0xFFD6A0}); const baju=new THREE.MeshStandardMaterial({color: kar=='tini'?0x6EC6FF:kar=='pakrt'?0x444444:kar=='bocil'?0xFF5252:0xA1887F});
  const body=new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.38,0.85,12),baju); body.position.y=0.45; group.add(body);
  const head=new THREE.Mesh(new THREE.SphereGeometry(0.36,16,16),skin); head.position.y=1.2; group.add(head);
- if(kar!='tini'){
-  const peciColor=kar=='pakrt'?0x111111:0x5D4037;
-  const peci=new THREE.Mesh(new THREE.CylinderGeometry(0.36,0.36,0.18,16),new THREE.MeshStandardMaterial({color:peciColor})); peci.position.y=1.48; group.add(peci);
- } else {
-  const hijab=new THREE.Mesh(new THREE.SphereGeometry(0.4,16,16,0,Math.PI*2,0,Math.PI*0.65),new THREE.MeshStandardMaterial({color:0x81D4FA})); hijab.position.y=1.22; hijab.rotation.x=Math.PI; group.add(hijab);
- }
- const mata=new THREE.Mesh(new THREE.SphereGeometry(0.055,8,8),new THREE.MeshStandardMaterial({color:0x000}));
- const m1=mata.clone(); m1.position.set(-0.12,1.25,0.31); group.add(m1);
- const m2=mata.clone(); m2.position.set(0.12,1.25,0.31); group.add(m2);
- if(mood=='kaget'){ m1.scale.set(1.8,1.8,1.8); m2.scale.set(1.8,1.8,1.8); const mulut=new THREE.Mesh(new THREE.CircleGeometry(0.08,12),new THREE.MeshStandardMaterial({color:0x000})); mulut.position.set(0,1.05,0.33); group.add(mulut); }
- if(mood=='takut'){ group.position.y=-0.2; group.rotation.z=0.15; }
- if(mood=='marah'){ group.scale.set(1.25,1.25,1.25); }
- const t=document.getElementById('teks').value||'Pak Sobri'; group.add(txtSprite(t));
+ if(kar!='tini'){ const peci=new THREE.Mesh(new THREE.CylinderGeometry(0.36,0.36,0.18,16),new THREE.MeshStandardMaterial({color:kar=='pakrt'?0x111111:0x5D4037})); peci.position.y=1.48; group.add(peci); }
+ else { const hijab=new THREE.Mesh(new THREE.SphereGeometry(0.4,16,16,0,Math.PI*2,0,Math.PI*0.65),new THREE.MeshStandardMaterial({color:0x81D4FA})); hijab.position.y=1.22; hijab.rotation.x=Math.PI; group.add(hijab); }
+ const mata=new THREE.Mesh(new THREE.SphereGeometry(0.055,8,8),new THREE.MeshStandardMaterial({color:0x000})); const m1=mata.clone(); m1.position.set(-0.12,1.25,0.31); group.add(m1); const m2=mata.clone(); m2.position.set(0.12,1.25,0.31); group.add(m2);
+ if(mood=='kaget'){ m1.scale.set(1.8,1.8,1.8); m2.scale.set(1.8,1.8,1.8); }
+ if(mood=='takut'){ group.position.y=-0.2; } if(mood=='marah'){ group.scale.set(1.25,1.25,1.25); }
+ group.add(txtSprite(document.getElementById('teks').value||'Pak Sobri'));
  scene.add(group); renderer.render(scene,camera);
 }
-function save(){ const a=document.createElement('a'); a.download='konon-'+document.getElementById('teks').value+'.png'; a.href=renderer.domElement.toDataURL(); a.click(); }
+function save(){ const a=document.createElement('a'); a.download='konon.png'; a.href=renderer.domElement.toDataURL(); a.click(); }
+function toggleRec(){
+ const btn=document.getElementById('recBtn'); const st=document.getElementById('status');
+ if(!isRec){
+  chunks=[]; stream=renderer.domElement.captureStream(30);
+  recorder=new MediaRecorder(stream,{mimeType:'video/webm'});
+  recorder.ondataavailable=e=>{if(e.data.size>0) chunks.push(e.data)};
+  recorder.onstop=()=>{
+   const blob=new Blob(chunks,{type:'video/webm'}); const url=URL.createObjectURL(blob);
+   const a=document.createElement('a'); a.href=url; a.download='shorts-konon-'+Date.now()+'.webm'; a.click();
+   st.innerText='Video tersimpan! Cek Download. Langsung upload ke YouTube Shorts.'; btn.innerText='🔴 MULAI REKAM VIDEO'; btn.classList.remove('rec');
+  };
+  recorder.start(); isRec=true; btn.innerText='⏹️ STOP & SIMPAN VIDEO'; btn.classList.add('rec'); st.innerText='🔴 MEREKAM... Sekarang ganti-ganti Pak Sobri -> Bu Tini -> Emosi Kaget. Bicara pakai suara kamu!';
+ } else {
+  recorder.stop(); isRec=false;
+ }
+}
 init();
-window.onresize=()=>{renderer.setSize(window.innerWidth, window.innerHeight*0.6); camera.aspect=window.innerWidth/(window.innerHeight*0.6); camera.updateProjectionMatrix(); draw();};
+window.onresize=()=>{renderer.setSize(window.innerWidth, window.innerHeight*0.55); camera.aspect=window.innerWidth/(window.innerHeight*0.55); camera.updateProjectionMatrix(); draw();};
 </script>
 </body>
 </html>
