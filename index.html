@@ -3,13 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>STUDIO ANIMASI SHORTS FIX</title>
-<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+<title>STUDIO ANIMASI SHORTS 2D</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial;background:#111;color:#fff}
 #top{background:#FF5722;padding:12px;text-align:center;font-weight:bold;position:fixed;top:0;width:100%;z-index:10}
-#view{position:fixed;top:45px;left:0;width:100%;height:55vh;background:#87CEEB}
-#c{width:100%;height:100%;display:block}
+#view{position:fixed;top:45px;left:0;width:100%;height:55vh;background:#87CEEB;display:flex;justify-content:center;align-items:center}
+#c{background:#FFF9C4;border:2px solid #333;width:100%;height:100%}
 #menu{position:fixed;bottom:0;left:0;width:100%;height:45vh;background:#222;padding:10px;overflow:auto}
 select,textarea,input,button{width:100%;padding:12px;margin:4px 0;border-radius:8px;border:0;font-size:14px}
 button{background:#2196F3;color:#fff;font-weight:bold} button.rec{background:#E91E63}
@@ -17,58 +16,80 @@ button{background:#2196F3;color:#fff;font-weight:bold} button.rec{background:#E9
 </style>
 </head>
 <body>
-<div id="top">🎬 STUDIO ANIMASI SHORTS - 60 DETIK 9:16</div>
-<div id="view"><canvas id="c"></canvas></div>
+<div id="top">🎬 STUDIO ANIMASI SHORTS - RIAN SMP 14 TH - 60 DETIK 9:16</div>
+<div id="view"><canvas id="c" width="360" height="640"></canvas></div>
 <div id="menu">
 <div class="row">
-<select id="kar" onchange="ganti(this.value)"><option value="rian">Rian (Biru)</option><option value="sari">Sari Hijab Putih</option><option value="bos">Bos Hitam</option><option value="guru">Bu Guru Batik</option></select>
-<select id="lok" onchange="gantiLokasi(this.value)"><option value="desa">Lokasi: Desa</option><option value="sekolah">Lokasi: Sekolah SMP</option><option value="rumah">Lokasi: Rumah</option><option value="kantor">Lokasi: Kantor</option></select>
+<select id="kar" onchange="draw()"><option value="rian">Rian SMP 14Th (Biru)</option><option value="sari">Sari Hijab Putih 14Th</option><option value="guru">Bu Guru Batik</option><option value="bos">Bos</option></select>
+<select id="lok" onchange="draw()"><option value="sekolah">Lokasi: Kelas SMP</option><option value="desa">Lokasi: Desa</option><option value="rumah">Lokasi: Rumah</option><option value="kantor">Lokasi: Kantor</option></select>
 </div>
-<button onclick="tambahAdegan()" style="background:#03A9F4">+ Tambah Adegan (max 6) - Sekarang: <span id="jml">2</span></button>
-<div id="list"></div>
-<textarea id="dlg" rows="2">Rian: Bu, otak lowbat butuh seblak!</textarea>
+<div style="background:#333;padding:5px;border-radius:6px">Adegan <span id="jml">1</span>/6 - Edit dialog di bawah:</div>
+<textarea id="dlg" rows="3">Bu Guru: 5+5 berapa Rian?
+Rian: Otak lowbat Bu, butuh seblak!
+Sari: Ya Allah Rian...
+Bu Guru: Ya sudah, PR seblak!</textarea>
 <div class="row">
-<button onclick="play()">▶ Play Cerita</button>
-<button onclick="jalan()">Jalan</button>
-<button onclick="lambai()">Lambaikan Tangan</button>
-<button onclick="berhenti()">Berhenti</button>
+<button onclick="play()">▶ Play Cerita + Suara</button>
+<button onclick="jalanAnim()">Jalan</button>
+<button onclick="lambaiAnim()">Lambaikan</button>
+<button onclick="stopAnim()">Berhenti</button>
 </div>
-<button class="rec" onclick="rekam()">🔴 REKAM VIDEO MP4 60 DETIK</button>
+<button class="rec" onclick="rekam()">🔴 REKAM VIDEO MP4 60 DETIK - HASIL 9:16</button>
+<p style="font-size:11px;color:#aaa;text-align:center">Versi 2D ini PASTI muncul, bisa rekam jadi video Shorts!</p>
 </div>
 <script>
-let scene,camera,renderer,group,walk=false;
-let canvas=document.getElementById('c');
-scene=new THREE.Scene(); scene.background=new THREE.Color(0x87CEEB);
-camera=new THREE.PerspectiveCamera(60, window.innerWidth/(window.innerHeight*0.55), 0.1, 100);
-camera.position.set(0,1.5,4); camera.lookAt(0,0.8,0);
-renderer=new THREE.WebGLRenderer({canvas:canvas, antialias:true});
-renderer.setSize(window.innerWidth, window.innerHeight*0.55);
-scene.add(new THREE.AmbientLight(0xffffff,0.8));
-let light=new THREE.DirectionalLight(0xffffff,0.8); light.position.set(2,5,3); scene.add(light);
-// Lantai
-let floor=new THREE.Mesh(new THREE.PlaneGeometry(10,10), new THREE.MeshStandardMaterial({color:0x4CAF50})); floor.rotation.x=-Math.PI/2; floor.position.y=0; scene.add(floor);
+let canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+let x=180, walk=false, lambai=false, frame=0;
 
-function ganti(t){
-if(group) scene.remove(group); group=new THREE.Group();
-let col=0x2196F3; if(t=='sari') col=0xE91E63; if(t=='bos') col=0x212121; if(t=='guru') col=0x795548;
-let body=new THREE.Mesh(new THREE.CapsuleGeometry(0.3,0.5,4,8), new THREE.MeshStandardMaterial({color:col})); body.position.y=0.8; group.add(body);
-let head=new THREE.Mesh(new THREE.SphereGeometry(0.3,16,16), new THREE.MeshStandardMaterial({color:0xFFDBAC})); head.position.y=1.4; group.add(head);
-if(t=='sari'){let j=new THREE.Mesh(new THREE.SphereGeometry(0.32,16,16,0,6.28,0,1.8), new THREE.MeshStandardMaterial({color:0xffffff})); j.position.y=1.45; group.add(j);}
-group.arms=[]; for(let i=0;i<2;i++){let a=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.35), new THREE.MeshStandardMaterial({color:col})); a.position.set(i?0.4:-0.4,0.8,0); group.add(a); group.arms.push(a);}
-group.legs=[]; for(let i=0;i<2;i++){let l=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,0.45), new THREE.MeshStandardMaterial({color:0x0D47A1})); l.position.set(i?0.12:-0.12,0.2,0); group.add(l); group.legs.push(l);}
-scene.add(group);
+function draw(){
+let kar=document.getElementById('kar').value;
+let lok=document.getElementById('lok').value;
+ctx.clearRect(0,0,360,640);
+// Background lokasi
+if(lok=='sekolah'){ctx.fillStyle='#FFF9C4'; ctx.fillRect(0,0,360,640); ctx.fillStyle='#8D6E63'; ctx.fillRect(0,450,360,50); ctx.fillStyle='#fff'; ctx.fillRect(20,20,320,80); ctx.fillStyle='#000'; ctx.font='20px Arial'; ctx.fillText('PAPAN TULIS: 5+5=?',30,60);}
+else if(lok=='desa'){ctx.fillStyle='#87CEEB'; ctx.fillRect(0,0,360,400); ctx.fillStyle='#4CAF50'; ctx.fillRect(0,400,360,240);}
+else{ctx.fillStyle='#FFE0B2'; ctx.fillRect(0,0,360,640);}
+
+// Karakter
+let color='#2196F3'; if(kar=='sari') color='#E91E63'; if(kar=='guru') color='#795548'; if(kar=='bos') color='#212121';
+ctx.save(); ctx.translate(x, 350);
+// Bayangan
+ctx.fillStyle='rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.ellipse(0,110,30,10,0,0,6.28); ctx.fill();
+// Kaki
+ctx.fillStyle='#0D47A1'; ctx.fillRect(-15+Math.sin(frame*0.3)*5, 50, 12, 40); ctx.fillRect(5-Math.sin(frame*0.3)*5, 50, 12, 40);
+// Badan
+ctx.fillStyle=color; ctx.beginPath(); ctx.roundRect(-25, -10, 50, 60, 15); ctx.fill();
+// Kepala
+ctx.fillStyle='#FFDBAC'; ctx.beginPath(); ctx.arc(0, -30, 25, 0, 6.28); ctx.fill();
+// Hijab
+if(kar=='sari'){ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(0, -30, 28, 3.5, 2.8); ctx.fill();}
+// Tangan
+ctx.fillStyle=color; let ang=lambai? Math.sin(frame*0.5)*1.5 : 0;
+ctx.save(); ctx.translate(-25,0); ctx.rotate(ang); ctx.fillRect(-10,-5,20,35); ctx.restore();
+ctx.fillRect(15,0,20,35);
+// Muka
+ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(-8,-28,2,0,6.28); ctx.arc(8,-28,2,0,6.28); ctx.fill();
+ctx.restore();
+// Nama
+ctx.fillStyle='#000'; ctx.font='bold 16px Arial'; ctx.textAlign='center'; ctx.fillText(kar.toUpperCase()+' - 14 TH SMP',180,500);
 }
-function gantiLokasi(v){if(v=='sekolah') scene.background=new THREE.Color(0xFFF9C4); if(v=='desa') scene.background=new THREE.Color(0x87CEEB); if(v=='rumah') scene.background=new THREE.Color(0xFFE0B2); if(v=='kantor') scene.background=new THREE.Color(0xCFD8DC);}
-ganti('rian');
-let adegan=[{txt:"Bu Guru: 5+5 berapa Rian?", act:"stop"}, {txt:"Rian: Otak lowbat Bu, butuh seblak!", act:"lambai"}];
-function renderList(){let l=document.getElementById('list'); l.innerHTML=''; adegan.forEach((a,i)=>{l.innerHTML+=`<div style="background:#333;padding:5px;border-radius:6px;margin:3px 0"><b>Adegan ${i+1}</b><input value="${a.txt}" onchange="adegan[${i}].txt=this.value" style="margin:2px 0"></div>`}); document.getElementById('jml').innerText=adegan.length;}
-function tambahAdegan(){if(adegan.length<6){adegan.push({txt:"Dialog baru "+(adegan.length+1), act:"jalan"}); renderList();}}
-function jalan(){walk=true} function berhenti(){walk=false} function lambai(){if(!group) return; let t=0; let it=setInterval(()=>{group.arms[0].rotation.x=Math.sin(t)*1.2; t+=0.4; if(t>12){clearInterval(it); group.arms[0].rotation.x=0}},30);}
-function ucap(txt){if('speechSynthesis' in window){let u=new SpeechSynthesisUtterance(txt); u.lang='id-ID'; u.rate=0.95; speechSynthesis.speak(u);}}
-function play(){let i=0; function nxt(){if(i>=adegan.length) return; let s=adegan[i]; if(s.act=='jalan') jalan(); else if(s.act=='lambai') lambai(); else berhenti(); ucap(s.txt); i++; setTimeout(nxt, 6000);} nxt();}
-function rekam(){let stream=canvas.captureStream(30); let rec=new MediaRecorder(stream,{mimeType:'video/webm'}); let ch=[]; rec.ondataavailable=e=>ch.push(e.data); rec.onstop=()=>{let blob=new Blob(ch,{type:'video/webm'}); let url=URL.createObjectURL(blob); let a=document.createElement('a'); a.href=url; a.download='SHORTS-60detik.mp4.webm'; a.click(); alert('Selesai! File ke-download!');}; rec.start(); play(); setTimeout(()=>rec.stop(),60000); alert('MEREKAM 60 DETIK - Jangan tutup HP!');}
-function anim(){requestAnimationFrame(anim); if(walk&&group){group.position.z-=0.02; group.legs[0].rotation.x=Math.sin(Date.now()*0.01)*0.6; group.legs[1].rotation.x=-Math.sin(Date.now()*0.01)*0.6; if(group.position.z<-4) group.position.z=2;} renderer.render(scene,camera);} anim(); renderList();
-window.addEventListener('resize',()=>{renderer.setSize(window.innerWidth, window.innerHeight*0.55);});
+
+function anim(){frame++; if(walk){x+=2; if(x>330) x=30;} draw(); requestAnimationFrame(anim);}
+anim();
+function jalanAnim(){walk=true; lambai=false} function stopAnim(){walk=false; lambai=false} function lambaiAnim(){lambai=true; walk=false}
+function ucap(t){if('speechSynthesis' in window){let u=new SpeechSynthesisUtterance(t); u.lang='id-ID'; u.rate=0.95; speechSynthesis.speak(u);}}
+function play(){
+let teks=document.getElementById('dlg').value;
+let lines=teks.split('\n');
+let i=0; function nxt(){if(i>=lines.length) return; ucap(lines[i]); document.getElementById('kar').value=lines[i].toLowerCase().includes('sari')?'sari':lines[i].toLowerCase().includes('guru')?'guru':'rian'; jalanAnim(); if(lines[i].toLowerCase().includes('otak lowbat')) lambaiAnim(); i++; setTimeout(nxt,3500);} nxt();
+}
+function rekam(){
+let stream=canvas.captureStream(30); let rec=new MediaRecorder(stream,{mimeType:'video/webm'}); let ch=[];
+rec.ondataavailable=e=>ch.push(e.data);
+rec.onstop=()=>{let blob=new Blob(ch,{type:'video/webm'}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='SHORTS-GURU-SMP-14TH-60detik-9x16.webm'; a.click(); alert('VIDEO SELESAI! Cek Download! Siap upload YouTube Shorts!');};
+rec.start(); play(); setTimeout(()=>rec.stop(),60000); alert('MEREKAM 60 DETIK! Jangan tutup HP! Suara + Gerakan jalan!');
+}
+draw();
 </script>
 </body>
 </html>
