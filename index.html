@@ -1,303 +1,87 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Animasi 3D Cartoon</title>
-
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>STUDIO ANIMASI SHORTS</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  overflow: hidden;
-  background: #101c35;
-  font-family: Arial, sans-serif;
-}
-#scene { width: 100vw; height: 100vh; }
-.panel {
-  position: fixed;
-  bottom: 20px;
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  z-index: 5;
-}
-button {
-  border: 0;
-  border-radius: 25px;
-  padding: 12px 18px;
-  color: white;
-  background: #2468d8;
-  font-weight: bold;
-}
-h3 {
-  position: fixed;
-  top: 10px;
-  width: 100%;
-  text-align: center;
-  color: white;
-  z-index: 5;
-}
+*{box-sizing:border-box}body{margin:0;font-family:Arial;background:#111;color:#fff}
+#top{background:#FF5722;padding:12px;text-align:center;font-weight:bold}
+#wrap{display:flex;flex-direction:column;height:90vh}
+#view{flex:1;background:#87CEEB;position:relative}
+canvas{width:100%;height:100%}
+#menu{background:#222;padding:10px;overflow:auto;max-height:60vh}
+select,textarea,input,button{width:100%;padding:10px;margin:5px 0;border-radius:8px;border:0}
+button{background:#2196F3;color:#fff;font-weight:bold}
+button.go{background:#4CAF50}
+button.rec{background:#E91E63}
+.row{display:flex;gap:5px}.row>*{flex:1}
+.box{background:#333;padding:6px;border-radius:6px;margin:4px 0}
 </style>
-
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
-  }
-}
-</script>
 </head>
-
 <body>
-<h3>MY 3D CARTOON WORLD</h3>
-<div id="scene"></div>
-
-<div class="panel">
-  <button id="walk">Jalan</button>
-  <button id="wave">Melambaikan Tangan</button>
-  <button id="stop">Berhenti</button>
+<div id="top">🎬 STUDIO ANIMASI SHORTS - 60 DETIK 9:16</div>
+<div id="wrap">
+<div id="view"><canvas id="c"></canvas></div>
+<div id="menu">
+<div class="row">
+<select id="kar"><option value="rian">Rian (Biru)</option><option value="sari">Sari (Hijab Putih)</option><option value="bos">Bos (Hitam)</option><option value="guru">Bu Guru Batik</option></select>
+<select id="lok"><option value="sekolah">Lokasi: Sekolah SMP</option><option value="rumah">Lokasi: Rumah</option><option value="desa">Lokasi: Desa</option><option value="kantor">Lokasi: Kantor</option></select>
 </div>
-
-<script type="module">
-import * as THREE from "three";
-import { OrbitControls } from
-"three/addons/controls/OrbitControls.js";
-
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x9bd9ff);
-scene.fog = new THREE.Fog(0x9bd9ff, 12, 30);
-
-const camera = new THREE.PerspectiveCamera(
-  45, innerWidth / innerHeight, 0.1, 100
-);
-camera.position.set(4, 3.5, 8);
-
-const renderer = new THREE.WebGLRenderer({
-  antialias: true
+<div id="list"></div>
+<button onclick="tambah()">+ Tambah Adegan (max 6)</button>
+<textarea id="dlg" rows="2" placeholder="Dialog: Rian: Bu, otak lowbat!"></textarea>
+<div class="row">
+<button onclick="playAll()">▶ Play</button>
+<button onclick="act('jalan')">Jalan</button>
+<button onclick="act('lambai')">Lambaikan Tangan</button>
+<button onclick="act('stop')">Berhenti</button>
+</div>
+<button class="rec" onclick="rekam()">🔴 REKAM VIDEO MP4 60 DETIK</button>
+<button class="go" onclick="window.open('https://jatommaniak-wq.github.io/animasi-3d.-Pilih-Add-file./','_blank')">Lihat Hasil Studio</button>
+</div>
+</div>
+<script>
+let scene,cam,ren,grp,walk=false;
+let cv=document.getElementById('c');
+scene=new THREE.Scene(); scene.background=new THREE.Color(0xFFF9C4);
+cam=new THREE.PerspectiveCamera(50,cv.clientWidth/cv.clientHeight,0.1,100); cam.position.set(0,2,4);
+ren=new THREE.WebGLRenderer({canvas:cv,antialias:true,preserveDrawingBuffer:true}); ren.setSize(cv.clientWidth,cv.clientHeight);
+scene.add(new THREE.AmbientLight(0xffffff,0.7)); let dl=new THREE.DirectionalLight(0xffffff,0.8); dl.position.set(2,5,3); scene.add(dl);
+function makeChar(t){
+if(grp) scene.remove(grp); grp=new THREE.Group();
+let col=0x2196F3; if(t=='sari') col=0xE91E63; if(t=='bos') col=0x212121; if(t=='guru') col=0x795548;
+let b=new THREE.Mesh(new THREE.CapsuleGeometry(0.35,0.6,4,8),new THREE.MeshStandardMaterial({color:col})); b.position.y=0.8; grp.add(b);
+let h=new THREE.Mesh(new THREE.SphereGeometry(0.32,16,16),new THREE.MeshStandardMaterial({color:0xFFDBAC})); h.position.y=1.5; grp.add(h);
+grp.arms=[]; grp.legs=[];
+for(let i=0;i<2;i++){let a=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,0.4),new THREE.MeshStandardMaterial({color:col})); a.position.set(i?0.45:-0.45,0.9,0); grp.add(a); grp.arms.push(a);}
+for(let i=0;i<2;i++){let l=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,0.5),new THREE.MeshStandardMaterial({color:0x0D47A1})); l.position.set(i?0.15:-0.15,0.2,0); grp.add(l); grp.legs.push(l);}
+scene.add(grp);
+}
+makeChar('rian');
+document.getElementById('kar').addEventListener('change',e=>makeChar(e.target.value));
+document.getElementById('lok').addEventListener('change',e=>{
+let v=e.target.value;
+if(v=='sekolah') scene.background=new THREE.Color(0xFFF9C4);
+if(v=='rumah') scene.background=new THREE.Color(0xFFE0B2);
+if(v=='desa') scene.background=new THREE.Color(0xC8E6C9);
+if(v=='kantor') scene.background=new THREE.Color(0xCFD8DC);
 });
-renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.2;
-document.getElementById("scene").appendChild(renderer.domElement);
-
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.target.set(0, 1.5, 0);
-
-scene.add(new THREE.HemisphereLight(0xffffff, 0x6b7d9e, 2));
-
-const sun = new THREE.DirectionalLight(0xffffff, 3);
-sun.position.set(5, 8, 5);
-sun.castShadow = true;
-sun.shadow.mapSize.set(1024, 1024);
-scene.add(sun);
-
-const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(100, 100),
-  new THREE.MeshStandardMaterial({ color: 0x78bd70 })
-);
-floor.rotation.x = -Math.PI / 2;
-floor.receiveShadow = true;
-scene.add(floor);
-
-const mat = (color, roughness = 0.8) =>
-  new THREE.MeshStandardMaterial({ color, roughness });
-
-const skin = mat(0xffbd91);
-const shirt = mat(0x287be5);
-const pants = mat(0x243d69);
-const hair = mat(0x38251d);
-const shoe = mat(0x292b35);
-const white = mat(0xffffff);
-const black = mat(0x17151b);
-
-function sphere(parent, name, pos, scale, material) {
-  const mesh = new THREE.Mesh(
-    new THREE.SphereGeometry(1, 32, 24),
-    material
-  );
-  mesh.name = name;
-  mesh.position.set(...pos);
-  mesh.scale.set(...scale);
-  mesh.castShadow = true;
-  parent.add(mesh);
-  return mesh;
+function act(a){if(a=='jalan') walk=true; if(a=='stop') walk=false; if(a=='lambai'){let t=0; let iv=setInterval(()=>{grp.arms[0].rotation.x=Math.sin(t)*1.2; t+=0.4; if(t>12){clearInterval(iv); grp.arms[0].rotation.x=0}},30);}}
+let scenes=[{txt:"Bu Guru: 5+5 berapa? Rian?", act:"stop"}, {txt:"Rian: Tunggu Bu, otak lowbat butuh seblak!", act:"lambai"}];
+function drawList(){let d=document.getElementById('list'); d.innerHTML=''; scenes.forEach((s,i)=>{d.innerHTML+=`<div class=box><b>Adegan ${i+1}</b><input value="${s.txt}" onchange="scenes[${i}].txt=this.value"><select onchange="scenes[${i}].act=this.value"><option value="stop">Berhenti</option><option value="jalan">Jalan</option><option value="lambai">Lambaikan Tangan</option></select></div>`});}
+function tambah(){if(scenes.length<6){scenes.push({txt:"Dialog baru", act:"stop"}); drawList();}}
+drawList();
+function ucap(t){if('speechSynthesis' in window){let u=new SpeechSynthesisUtterance(t); u.lang='id-ID'; u.rate=0.95; speechSynthesis.speak(u);}}
+function playAll(){let i=0; function next(){if(i>=scenes.length) return; let s=scenes[i]; act(s.act); ucap(s.txt); i++; setTimeout(next,7000);} next();}
+function rekam(){
+let stream=cv.captureStream(30); let rec=new MediaRecorder(stream,{mimeType:'video/webm'}); let ch=[];
+rec.ondataavailable=e=>ch.push(e.data);
+rec.onstop=()=>{let blob=new Blob(ch,{type:'video/webm'}); let url=URL.createObjectURL(blob); let a=document.createElement('a'); a.href=url; a.download='SHORTS-60detik-9x16.webm'; a.click();};
+rec.start(); playAll(); setTimeout(()=>rec.stop(),60000); alert('MEREKAM 60 DETIK! Jangan tutup HP!');
 }
-
-function limb(parent, pos, length, radius, material) {
-  const mesh = new THREE.Mesh(
-    new THREE.CylinderGeometry(radius, radius, length, 20),
-    material
-  );
-  mesh.position.set(...pos);
-  mesh.castShadow = true;
-  parent.add(mesh);
-  return mesh;
-}
-
-// Character
-const character = new THREE.Group();
-scene.add(character);
-
-const body = new THREE.Group();
-character.add(body);
-
-// Torso
-sphere(body, "body", [0, 1.45, 0], [.48, .65, .3], shirt);
-
-// Neck
-sphere(body, "neck", [0, 2.05, 0], [.19, .23, .19], skin);
-
-// Head
-const head = new THREE.Group();
-head.position.set(0, 2.55, 0);
-body.add(head);
-
-sphere(head, "face", [0, 0, 0], [.57, .65, .49], skin);
-
-// Hair cap
-sphere(head, "hair", [0, .42, -.03], [.59, .32, .52], hair);
-sphere(head, "bang", [0, .27, .39], [.38, .20, .17], hair);
-
-// Ears
-sphere(head, "earL", [-.56, -.05, 0], [.13, .19, .12], skin);
-sphere(head, "earR", [.56, -.05, 0], [.13, .19, .12], skin);
-
-// Eyes
-for (const x of [-.21, .21]) {
-  sphere(head, "eye", [x, .07, .423], [.125, .17, .075], white);
-  sphere(head, "pupil", [x, .06, .49], [.065, .095, .035], black);
-  sphere(head, "shine", [x-.02, .105, .52],
-    [.025, .03, .015], white);
-}
-
-// Nose and smile
-sphere(head, "nose", [0, -.10, .49], [.09, .09, .08], skin);
-
-const smile = new THREE.Mesh(
-  new THREE.TorusGeometry(.14, .025, 8, 24, Math.PI),
-  mat(0x7b3030)
-);
-smile.position.set(0, -.27, .47);
-smile.rotation.z = Math.PI;
-head.add(smile);
-
-// Arms
-function makeArm(x) {
-  const pivot = new THREE.Group();
-  pivot.position.set(x, 1.85, 0);
-  body.add(pivot);
-
-  sphere(pivot, "shoulder", [0, 0, 0], [.19, .20, .19], shirt);
-  limb(pivot, [0, -.32, 0], .48, .115, shirt);
-  sphere(pivot, "hand", [0, -.63, 0], [.13, .14, .13], skin);
-
-  return pivot;
-}
-const leftArm = makeArm(-.53);
-const rightArm = makeArm(.53);
-
-// Legs
-function makeLeg(x) {
-  const pivot = new THREE.Group();
-  pivot.position.set(x, .91, 0);
-  body.add(pivot);
-
-  limb(pivot, [0, -.32, 0], .65, .16, pants);
-  sphere(pivot, "shoe", [0, -.70, .10], [.20, .13, .32], shoe);
-
-  return pivot;
-}
-const leftLeg = makeLeg(-.23);
-const rightLeg = makeLeg(.23);
-
-// Decorative environment
-function tree(x, z) {
-  const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(.12, .17, 1.2, 12),
-    mat(0x79502e)
-  );
-  trunk.position.set(x, .6, z);
-  trunk.castShadow = true;
-  scene.add(trunk);
-
-  sphere(scene, "tree crown", [x, 1.45, z],
-    [.75, .85, .75], mat(0x278b4c));
-}
-tree(-3, -2);
-tree(3, -3);
-
-// Cloud decorations
-for (let i = 0; i < 5; i++) {
-  sphere(scene, "cloud", [
-    -5 + i * 2.5, 4 + (i%2)*.7, -5
-  ], [.7, .25, .35], white);
-}
-
-// Animation states
-let mode = "walk";
-let clock = new THREE.Clock();
-
-document.getElementById("walk").onclick = () => mode = "walk";
-document.getElementById("wave").onclick = () => mode = "wave";
-document.getElementById("stop").onclick = () => mode = "stop";
-
-function animate() {
-  requestAnimationFrame(animate);
-
-  const t = clock.getElapsedTime();
-
-  if (mode === "walk") {
-    leftLeg.rotation.x = Math.sin(t * 5) * .55;
-    rightLeg.rotation.x = -Math.sin(t * 5) * .55;
-    leftArm.rotation.x = -Math.sin(t * 5) * .4;
-    rightArm.rotation.x = Math.sin(t * 5) * .4;
-    body.position.y = Math.abs(Math.sin(t * 5)) * .06;
-  }
-
-  if (mode === "wave") {
-    leftLeg.rotation.x = 0;
-    rightLeg.rotation.x = 0;
-    leftArm.rotation.x = 0;
-    rightArm.rotation.z = -.3;
-    rightArm.rotation.x = Math.sin(t * 8) * .55 - .9;
-    body.position.y = Math.sin(t * 3) * .03;
-  }
-
-  if (mode === "stop") {
-    leftLeg.rotation.x = 0;
-    rightLeg.rotation.x = 0;
-    leftArm.rotation.x = 0;
-    rightArm.rotation.x = 0;
-    rightArm.rotation.z = 0;
-    body.position.y = 0;
-  }
-
-  if (mode !== "wave") {
-    rightArm.rotation.z = 0;
-  }
-
-  head.rotation.y = Math.sin(t * 1.2) * .08;
-  controls.update();
-  renderer.render(scene, camera);
-}
-
-animate();
-
-addEventListener("resize", () => {
-  camera.aspect = innerWidth / innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
-});
+function loop(){requestAnimationFrame(loop); if(walk&&grp){grp.position.z-=0.02; grp.legs[0].rotation.x=Math.sin(Date.now()*0.01)*0.6; grp.legs[1].rotation.x=-Math.sin(Date.now()*0.01)*0.6; if(grp.position.z<-4) grp.position.z=3;} ren.render(scene,cam);} loop();
 </script>
 </body>
-</html>
+  </html>
