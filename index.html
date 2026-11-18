@@ -1,94 +1,46 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>STUDIO ANIMASI SHORTS 3D</title>
-<style>
-*{box-sizing:border-box}body{margin:0;font-family:system-ui;background:#111;color:#fff;overflow:hidden}
-#top{background:#FF5722;padding:12px;text-align:center;font-weight:900;letter-spacing:1px}
-#view{position:fixed;top:45px;left:0;width:100%;height:calc(100% - 180px);background:#1a1a1a}
-#c{width:100%;height:100%;display:block}
-#menu{position:fixed;bottom:0;left:0;width:100%;background:#222;padding:10px;border-top:2px solid #FF5722;max-height:180px;overflow-y:auto}
-select,textarea,input,button{width:100%;padding:8px;margin:4px 0;border-radius:6px;border:none;font-weight:600}
-button{background:#2196F3;color:#fff;font-size:16px;cursor:pointer}
-button:active{transform:scale(0.98)}
-.row{display:flex;gap:5px}.row>*{flex:1}
-label{font-size:11px;color:#aaa}
-</style>
-<script type="importmap">
-{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
-</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STUDIO 3D LITE</title>
+<style>body{margin:0;background:#111;color:#fff;font-family:sans-serif}#top{background:#FF5722;padding:10px;text-align:center;font-weight:900}#c{width:100%;height:65vh;display:block;background:#222}#menu{padding:8px;background:#1a1a1a}select,input,textarea,button{width:100%;padding:8px;margin:3px 0;border-radius:6px;border:none}button{font-weight:900;color:#fff} .row{display:flex;gap:4px}.row>*{flex:1}</style>
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
 </head>
 <body>
-<div id="top">🎬 STUDIO ANIMASI SHORTS - 3D EDITION</div>
-<div id="view"><canvas id="c"></canvas></div>
+<div id="top">🎬 STUDIO ANIMASI SHORTS - 3D LITE (FIX HP)</div>
+<canvas id="c"></canvas>
 <div id="menu">
-<div class="row">
-<select id="kar" onchange="draw()"><option value="oren">AKU - Kucing Oren</option><option value="emak">EMAK - Kucing Daster</option><option value="alek">ALEK - Kucing Kurus</option><option value="ketua">KETUA - Kucing Preman</option><option value="punk">PUNK - Kucing Jalanan</option></select>
-<select id="aksi" onchange="draw()"><option value="idle">Idle / Diam</option><option value="marah">Marah / Ngamuk</option><option value="takut">Takut / Kaget</option><option value="jalan">Jalan</option><option value="duduk">Duduk Canggung</option></select>
-</div>
-<div class="row">
-<input id="judul" type="text" value="POV: ada tamu pas lagi sendiri dirumah" placeholder="Judul POV">
-<select id="bg" onchange="draw()"><option value="rumah">Background Rumah</option><option value="desa">Jalan Desa</option><option value="sawah">Sawah / Pisang</option><option value="malam">Malam Horror</option></select>
-</div>
-<textarea id="dialog" rows="2" placeholder="Dialog...">aku: waduh ada tamu...
+<div class="row"><select id="kar"><option value="oren">AKU Oren</option><option value="emak">EMAK</option><option value="alek">ALEK</option><option value="ketua">KETUA</option></select><select id="aksi"><option value="idle">Idle</option><option value="marah">Marah</option><option value="takut">Takut</option></select></div>
+<input id="judul" value="POV: ada tamu pas lagi sendiri dirumah">
+<textarea id="dialog" rows="2">aku: waduh ada tamu...
 tamu: assalamualaikum, emak ada?</textarea>
-<div class="row">
-<button onclick="draw()">🔄 RENDER 3D</button>
-<button onclick="download()" style="background:#4CAF50">💾 SAVE PNG</button>
-<button onclick="rekam()" style="background:#f44336">● REKAM SHORTS</button>
+<div class="row"><button onclick="render()" style="background:#2196F3">🔄 RENDER 3D</button><button onclick="location.reload()" style="background:#4CAF50">RELOAD</button></div>
 </div>
-</div>
-
-<script type="module">
-import * as THREE from 'three';
-const canvas = document.getElementById('c');
-const scene = new THREE.Scene();
-const renderer = new THREE.WebGLRenderer({canvas, antialias:true, preserveDrawingBuffer:true});
-renderer.setSize(window.innerWidth, window.innerHeight * 0.7);
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth/(window.innerHeight*0.7), 0.1, 100);
-camera.position.set(0,1.5,4);
-const light = new THREE.DirectionalLight(0xffffff,1); light.position.set(2,5,3); scene.add(light);
-scene.add(new THREE.AmbientLight(0xffffff,0.8));
-let karakterGroup;
-
-function createCat(color, type){
-  const g = new THREE.Group();
-  const bodyMat = new THREE.MeshStandardMaterial({color:color});
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.3,0.6,4,8), bodyMat); body.position.y=0.8; g.add(body);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.35,16,16), bodyMat); head.position.y=1.5; g.add(head);
-  const telinga1 = new THREE.Mesh(new THREE.ConeGeometry(0.12,0.25,8), bodyMat); telinga1.position.set(-0.2,1.8,0); g.add(telinga1);
-  const telinga2 = telinga1.clone(); telinga2.position.x=0.2; g.add(telinga2);
-  if(type==='emak'){ const daster = new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.5,0.7,12), new THREE.MeshStandardMaterial({color:0xff88cc})); daster.position.y=0.8; g.add(daster); }
-  return g;
+<script>
+let scene, camera, renderer, cat;
+function init(){
+ scene = new THREE.Scene(); scene.background = new THREE.Color(0xFFF9C4);
+ camera = new THREE.PerspectiveCamera(50, window.innerWidth/(window.innerHeight*0.65), 0.1, 100); camera.position.set(0,1,3);
+ renderer = new THREE.WebGLRenderer({canvas:document.getElementById('c'), antialias:true}); renderer.setSize(window.innerWidth, window.innerHeight*0.65);
+ const light = new THREE.DirectionalLight(0xffffff,1); light.position.set(2,3,2); scene.add(light); scene.add(new THREE.AmbientLight(0xffffff,0.7));
+ render();
 }
-
-function setBg(v){
-  if(v==='rumah') scene.background = new THREE.Color(0xFFF9C4);
-  if(v==='desa') scene.background = new THREE.Color(0xC8E6C9);
-  if(v==='sawah') scene.background = new THREE.Color(0xDCEDC8);
-  if(v==='malam') scene.background = new THREE.Color(0x1a1a2e);
+function render(){
+ if(cat) scene.remove(cat);
+ const kar=document.getElementById('kar').value; const aksi=document.getElementById('aksi').value;
+ cat = new THREE.Group();
+ let col=0xffa500; if(kar=='emak') col=0xffffff; if(kar=='alek') col=0x999999; if(kar=='ketua') col=0x333333;
+ const mat = new THREE.MeshStandardMaterial({color:col});
+ const body = new THREE.Mesh(new THREE.SphereGeometry(0.4,16,16), mat); body.position.y=0.6; body.scale.y=1.3; cat.add(body);
+ const head = new THREE.Mesh(new THREE.SphereGeometry(0.35,16,16), mat); head.position.y=1.3; cat.add(head);
+ const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05,8,8), new THREE.MeshStandardMaterial({color:0x000000})); eye.position.set(-0.15,1.35,0.3); cat.add(eye);
+ const eye2=eye.clone(); eye2.position.x=0.15; cat.add(eye2);
+ if(aksi=='marah'){cat.scale.set(1.3,1.3,1.3); cat.rotation.x=0.2;} if(aksi=='takut'){cat.position.y=-0.3;}
+ scene.add(cat); renderer.render(scene,camera);
 }
-
-window.draw = ()=>{
-  if(karakterGroup) scene.remove(karakterGroup);
-  const kar = document.getElementById('kar').value;
-  const bg = document.getElementById('bg').value;
-  setBg(bg);
-  let col = 0xffa500;
-  if(kar==='emak') col=0xeeeeee;
-  if(kar==='alek') col=0x888888;
-  if(kar==='ketua') col=0x333333;
-  if(kar==='punk') col=0xcc4444;
-  karakterGroup = createCat(col, kar);
-  const aksi = document.getElementById('aksi').value;
-  if(aksi==='marah'){ karakterGroup.rotation.x=0.3; karakterGroup.scale.set(1.2,1.2,1.2); }
-  if(aksi==='takut'){ karakterGroup.position.y=-0.2; karakterGroup.rotation.z=0.2; }
-  if(aksi==='duduk'){ karakterGroup.position.y=-0.5; }
-  scene.add(karakterGroup);
-  renderer.render(scene,camera);
-}
-
-window.download = ()=>{
-  const link = document.createElement('a'); link
+init();
+window.addEventListener('resize',()=>{renderer.setSize(window.innerWidth, window.innerHeight*0.65); render();});
+</script>
+</body>
+</html>
