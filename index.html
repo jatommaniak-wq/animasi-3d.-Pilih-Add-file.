@@ -2,94 +2,93 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>STUDIO ANIMASI SHORTS 2D</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>STUDIO ANIMASI SHORTS 3D</title>
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:Arial;background:#111;color:#fff}
-#top{background:#FF5722;padding:12px;text-align:center;font-weight:bold;position:fixed;top:0;width:100%;z-index:10}
-#view{position:fixed;top:45px;left:0;width:100%;height:55vh;background:#87CEEB;display:flex;justify-content:center;align-items:center}
-#c{background:#FFF9C4;border:2px solid #333;width:100%;height:100%}
-#menu{position:fixed;bottom:0;left:0;width:100%;height:45vh;background:#222;padding:10px;overflow:auto}
-select,textarea,input,button{width:100%;padding:12px;margin:4px 0;border-radius:8px;border:0;font-size:14px}
-button{background:#2196F3;color:#fff;font-weight:bold} button.rec{background:#E91E63}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui;background:#111;color:#fff;overflow:hidden}
+#top{background:#FF5722;padding:12px;text-align:center;font-weight:900;letter-spacing:1px}
+#view{position:fixed;top:45px;left:0;width:100%;height:calc(100% - 180px);background:#1a1a1a}
+#c{width:100%;height:100%;display:block}
+#menu{position:fixed;bottom:0;left:0;width:100%;background:#222;padding:10px;border-top:2px solid #FF5722;max-height:180px;overflow-y:auto}
+select,textarea,input,button{width:100%;padding:8px;margin:4px 0;border-radius:6px;border:none;font-weight:600}
+button{background:#2196F3;color:#fff;font-size:16px;cursor:pointer}
+button:active{transform:scale(0.98)}
 .row{display:flex;gap:5px}.row>*{flex:1}
+label{font-size:11px;color:#aaa}
 </style>
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+</script>
 </head>
 <body>
-<div id="top">🎬 STUDIO ANIMASI SHORTS - RIAN SMP 14 TH - 60 DETIK 9:16</div>
-<div id="view"><canvas id="c" width="360" height="640"></canvas></div>
+<div id="top">🎬 STUDIO ANIMASI SHORTS - 3D EDITION</div>
+<div id="view"><canvas id="c"></canvas></div>
 <div id="menu">
 <div class="row">
-<select id="kar" onchange="draw()"><option value="rian">Rian SMP 14Th (Biru)</option><option value="sari">Sari Hijab Putih 14Th</option><option value="guru">Bu Guru Batik</option><option value="bos">Bos</option></select>
-<select id="lok" onchange="draw()"><option value="sekolah">Lokasi: Kelas SMP</option><option value="desa">Lokasi: Desa</option><option value="rumah">Lokasi: Rumah</option><option value="kantor">Lokasi: Kantor</option></select>
+<select id="kar" onchange="draw()"><option value="oren">AKU - Kucing Oren</option><option value="emak">EMAK - Kucing Daster</option><option value="alek">ALEK - Kucing Kurus</option><option value="ketua">KETUA - Kucing Preman</option><option value="punk">PUNK - Kucing Jalanan</option></select>
+<select id="aksi" onchange="draw()"><option value="idle">Idle / Diam</option><option value="marah">Marah / Ngamuk</option><option value="takut">Takut / Kaget</option><option value="jalan">Jalan</option><option value="duduk">Duduk Canggung</option></select>
 </div>
-<div style="background:#333;padding:5px;border-radius:6px">Adegan <span id="jml">1</span>/6 - Edit dialog di bawah:</div>
-<textarea id="dlg" rows="3">Bu Guru: 5+5 berapa Rian?
-Rian: Otak lowbat Bu, butuh seblak!
-Sari: Ya Allah Rian...
-Bu Guru: Ya sudah, PR seblak!</textarea>
 <div class="row">
-<button onclick="play()">▶ Play Cerita + Suara</button>
-<button onclick="jalanAnim()">Jalan</button>
-<button onclick="lambaiAnim()">Lambaikan</button>
-<button onclick="stopAnim()">Berhenti</button>
+<input id="judul" type="text" value="POV: ada tamu pas lagi sendiri dirumah" placeholder="Judul POV">
+<select id="bg" onchange="draw()"><option value="rumah">Background Rumah</option><option value="desa">Jalan Desa</option><option value="sawah">Sawah / Pisang</option><option value="malam">Malam Horror</option></select>
 </div>
-<button class="rec" onclick="rekam()">🔴 REKAM VIDEO MP4 60 DETIK - HASIL 9:16</button>
-<p style="font-size:11px;color:#aaa;text-align:center">Versi 2D ini PASTI muncul, bisa rekam jadi video Shorts!</p>
+<textarea id="dialog" rows="2" placeholder="Dialog...">aku: waduh ada tamu...
+tamu: assalamualaikum, emak ada?</textarea>
+<div class="row">
+<button onclick="draw()">🔄 RENDER 3D</button>
+<button onclick="download()" style="background:#4CAF50">💾 SAVE PNG</button>
+<button onclick="rekam()" style="background:#f44336">● REKAM SHORTS</button>
 </div>
-<script>
-let canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
-let x=180, walk=false, lambai=false, frame=0;
+</div>
 
-function draw(){
-let kar=document.getElementById('kar').value;
-let lok=document.getElementById('lok').value;
-ctx.clearRect(0,0,360,640);
-// Background lokasi
-if(lok=='sekolah'){ctx.fillStyle='#FFF9C4'; ctx.fillRect(0,0,360,640); ctx.fillStyle='#8D6E63'; ctx.fillRect(0,450,360,50); ctx.fillStyle='#fff'; ctx.fillRect(20,20,320,80); ctx.fillStyle='#000'; ctx.font='20px Arial'; ctx.fillText('PAPAN TULIS: 5+5=?',30,60);}
-else if(lok=='desa'){ctx.fillStyle='#87CEEB'; ctx.fillRect(0,0,360,400); ctx.fillStyle='#4CAF50'; ctx.fillRect(0,400,360,240);}
-else{ctx.fillStyle='#FFE0B2'; ctx.fillRect(0,0,360,640);}
+<script type="module">
+import * as THREE from 'three';
+const canvas = document.getElementById('c');
+const scene = new THREE.Scene();
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, preserveDrawingBuffer:true});
+renderer.setSize(window.innerWidth, window.innerHeight * 0.7);
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth/(window.innerHeight*0.7), 0.1, 100);
+camera.position.set(0,1.5,4);
+const light = new THREE.DirectionalLight(0xffffff,1); light.position.set(2,5,3); scene.add(light);
+scene.add(new THREE.AmbientLight(0xffffff,0.8));
+let karakterGroup;
 
-// Karakter
-let color='#2196F3'; if(kar=='sari') color='#E91E63'; if(kar=='guru') color='#795548'; if(kar=='bos') color='#212121';
-ctx.save(); ctx.translate(x, 350);
-// Bayangan
-ctx.fillStyle='rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.ellipse(0,110,30,10,0,0,6.28); ctx.fill();
-// Kaki
-ctx.fillStyle='#0D47A1'; ctx.fillRect(-15+Math.sin(frame*0.3)*5, 50, 12, 40); ctx.fillRect(5-Math.sin(frame*0.3)*5, 50, 12, 40);
-// Badan
-ctx.fillStyle=color; ctx.beginPath(); ctx.roundRect(-25, -10, 50, 60, 15); ctx.fill();
-// Kepala
-ctx.fillStyle='#FFDBAC'; ctx.beginPath(); ctx.arc(0, -30, 25, 0, 6.28); ctx.fill();
-// Hijab
-if(kar=='sari'){ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(0, -30, 28, 3.5, 2.8); ctx.fill();}
-// Tangan
-ctx.fillStyle=color; let ang=lambai? Math.sin(frame*0.5)*1.5 : 0;
-ctx.save(); ctx.translate(-25,0); ctx.rotate(ang); ctx.fillRect(-10,-5,20,35); ctx.restore();
-ctx.fillRect(15,0,20,35);
-// Muka
-ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(-8,-28,2,0,6.28); ctx.arc(8,-28,2,0,6.28); ctx.fill();
-ctx.restore();
-// Nama
-ctx.fillStyle='#000'; ctx.font='bold 16px Arial'; ctx.textAlign='center'; ctx.fillText(kar.toUpperCase()+' - 14 TH SMP',180,500);
+function createCat(color, type){
+  const g = new THREE.Group();
+  const bodyMat = new THREE.MeshStandardMaterial({color:color});
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.3,0.6,4,8), bodyMat); body.position.y=0.8; g.add(body);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.35,16,16), bodyMat); head.position.y=1.5; g.add(head);
+  const telinga1 = new THREE.Mesh(new THREE.ConeGeometry(0.12,0.25,8), bodyMat); telinga1.position.set(-0.2,1.8,0); g.add(telinga1);
+  const telinga2 = telinga1.clone(); telinga2.position.x=0.2; g.add(telinga2);
+  if(type==='emak'){ const daster = new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.5,0.7,12), new THREE.MeshStandardMaterial({color:0xff88cc})); daster.position.y=0.8; g.add(daster); }
+  return g;
 }
 
-function anim(){frame++; if(walk){x+=2; if(x>330) x=30;} draw(); requestAnimationFrame(anim);}
-anim();
-function jalanAnim(){walk=true; lambai=false} function stopAnim(){walk=false; lambai=false} function lambaiAnim(){lambai=true; walk=false}
-function ucap(t){if('speechSynthesis' in window){let u=new SpeechSynthesisUtterance(t); u.lang='id-ID'; u.rate=0.95; speechSynthesis.speak(u);}}
-function play(){
-let teks=document.getElementById('dlg').value;
-let lines=teks.split('\n');
-let i=0; function nxt(){if(i>=lines.length) return; ucap(lines[i]); document.getElementById('kar').value=lines[i].toLowerCase().includes('sari')?'sari':lines[i].toLowerCase().includes('guru')?'guru':'rian'; jalanAnim(); if(lines[i].toLowerCase().includes('otak lowbat')) lambaiAnim(); i++; setTimeout(nxt,3500);} nxt();
+function setBg(v){
+  if(v==='rumah') scene.background = new THREE.Color(0xFFF9C4);
+  if(v==='desa') scene.background = new THREE.Color(0xC8E6C9);
+  if(v==='sawah') scene.background = new THREE.Color(0xDCEDC8);
+  if(v==='malam') scene.background = new THREE.Color(0x1a1a2e);
 }
-function rekam(){
-let stream=canvas.captureStream(30); let rec=new MediaRecorder(stream,{mimeType:'video/webm'}); let ch=[];
-rec.ondataavailable=e=>ch.push(e.data);
-rec.onstop=()=>{let blob=new Blob(ch,{type:'video/webm'}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='SHORTS-GURU-SMP-14TH-60detik-9x16.webm'; a.click(); alert('VIDEO SELESAI! Cek Download! Siap upload YouTube Shorts!');};
-rec.start(); play(); setTimeout(()=>rec.stop(),60000); alert('MEREKAM 60 DETIK! Jangan tutup HP! Suara + Gerakan jalan!');
+
+window.draw = ()=>{
+  if(karakterGroup) scene.remove(karakterGroup);
+  const kar = document.getElementById('kar').value;
+  const bg = document.getElementById('bg').value;
+  setBg(bg);
+  let col = 0xffa500;
+  if(kar==='emak') col=0xeeeeee;
+  if(kar==='alek') col=0x888888;
+  if(kar==='ketua') col=0x333333;
+  if(kar==='punk') col=0xcc4444;
+  karakterGroup = createCat(col, kar);
+  const aksi = document.getElementById('aksi').value;
+  if(aksi==='marah'){ karakterGroup.rotation.x=0.3; karakterGroup.scale.set(1.2,1.2,1.2); }
+  if(aksi==='takut'){ karakterGroup.position.y=-0.2; karakterGroup.rotation.z=0.2; }
+  if(aksi==='duduk'){ karakterGroup.position.y=-0.5; }
+  scene.add(karakterGroup);
+  renderer.render(scene,camera);
 }
-draw();
-</script>
-</body>
-</html>
+
+window.download = ()=>{
+  const link = document.createElement('a'); link
