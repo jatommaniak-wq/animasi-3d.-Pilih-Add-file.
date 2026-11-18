@@ -1,112 +1,214 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KONON V5 - 2D ASLI</title>
+---
+name: stick-figure-android
+description: Membuat video explainer kartun 9:16 (30 sampai 45 detik) dengan karakter Dodi (kepala telur abu-abu, rambut coklat, kacamata bulat, hoodie merah, tangan-kaki lidi, sepatu kuning) yang bisa dibuat dan direkam langsung dari HP Android. Hasilnya SATU file HTML berisi animasi kode, teks layar 1 sampai 2 kata, musik dan efek suara sintetis, voice over AI Kokoro (bahasa Inggris, dibuat di HP), tombol rekam suara sendiri, dan tombol rekam video MP4/WebM. Juga menangani alur ide topik (sejarah / fakta unik) → narasi → "buat video". Pakai saat pengguna minta ide topik video, narasi video pendek, video stick figure, video Dodi, explainer kartun "kenapa / bagaimana kalau", mengetik "buat video", atau memanggil /stick-figure-android.
+---
+
+# Stick Figure Android (karakter Dodi)
+
+```
+┌──────────────────────┐
+│  ☀   ☁        ?      │  dunia cerah digambar dengan kode
+│        ( o_o )       │  Dodi: kepala telur, kacamata, rambut coklat
+│         /[■]\        │  hoodie merah, tangan & kaki lidi
+│          / \         │  sepatu kuning
+│      teks layar      │  1-2 kata, huruf kecil, di ~70% tinggi layar
+└──────────────────────┘
+```
+
+Skill ini tidak butuh komputer, ffmpeg, Node, atau Python. Claude menulis satu file `.html`. Pengguna membukanya di **Google Chrome di HP Android**, menekan **🤖 Suara AI (Kokoro)** (atau merekam suaranya sendiri), lalu menekan **⏺ Rekam video**. Video tersimpan di HP.
+
+Di bawah ada **TEMPLATE** lengkap: bagian ENGINE (jangan diubah) dan bagian REEL (contoh jadi: "Why is the sky blue?", 9 kalimat, 9 adegan, bahasa Inggris). Setiap video baru = salin TEMPLATE, tulis ulang bagian REEL saja.
+
+## Alur percakapan
+
+Pengguna sering memakai tiga langkah ini. Ikuti tanpa bertanya ulang:
+
+1. **Minta ide topik** (mis. "kasih 10 ide sejarah / fakta unik"): beri 10 pilihan bernomor, campuran sejarah dan fakta unik kecuali diminta lain. Tiap pilihan = judul pendek yang bikin penasaran + satu kalimat hook. Tulis daftarnya dalam bahasa Indonesia supaya pengguna mudah memilih. Jangan membuat narasi dulu.
+2. **Pengguna memilih nomor**: langsung tulis narasinya (langkah 1 dan 2 di bawah) dalam bahasa video. Kalau pengguna minta bahasa Inggris, narasi dalam bahasa Inggris, lalu tambahkan terjemahan Indonesia singkat di bawahnya agar pengguna paham. Akhiri dengan: "Ketik **buat video** kalau sudah cocok."
+3. **Pengguna mengetik "buat video"**: langsung buat file HTML (langkah 3 sampai 6) memakai narasi terakhir, persis kata per kata. Jangan bertanya lagi. Untuk video bahasa Inggris, isi `lang: 'en-US'` dan pilih `voice` Kokoro yang cocok.
+
+## Langkah kerja Claude
+
+1. **Naskah.** Dari topik pengguna, tulis naskah 75 sampai 100 kata (30 sampai 45 detik), 8 sampai 11 kalimat, satu ide per kalimat, kalimat pendek dan mudah diucapkan. Urutan: hook pertanyaan ("Kenapa…?", "Bagaimana kalau…?"), anggapan umum, belokan ("Padahal…", "Tapi…"), contoh yang makin kuat, satu kalimat yang menunjukkan mekanismenya, lalu jawaban yang menutup hook. Bahasa mengikuti permintaan pengguna (default Indonesia; kalau diminta Inggris, pakai bahasa Inggris percakapan yang sederhana). Angka ditulis dengan huruf di naskah ("twenty five") agar dibaca benar oleh suara AI, lalu ubah di `captions` (`{'twenty five': '25'}`). **Tunjukkan naskah dan tunggu persetujuan ("buat video") sebelum menulis animasi.**
+2. **Fakta.** Cek setiap klaim (pakai pencarian web kalau ada). Teori ditulis hati-hati ("ilmuwan menduga…"). Jangan mengarang angka.
+3. **Rencana adegan.** Buat tabel singkat: nomor kalimat → tempat, aksi Dodi, properti, kata yang memicu aksi/SFX. Kira-kira satu adegan per kalimat (kalimat panjang boleh 2 adegan dengan `w`). Ide baru = tempat/sudut baru.
+4. **Tulis file.** Salin TEMPLATE di bawah **persis** dari `<!doctype html>` sampai `</html>`. Ganti hanya isi di antara `// ===================== REEL` dan akhir script itu (objek `REEL`, fungsi bantu khusus video, `scene(...)`, `sfx(...)`). Jangan mengubah ENGINE.
+   - Kalau ada alat pembuat file: simpan sebagai `<judul-pendek>.html` dan berikan sebagai file unduhan. Kalau tidak ada, keluarkan sebagai artifact HTML.
+5. **Periksa sendiri** dengan daftar cek di bawah sebelum menyerahkan.
+6. **Serahkan** file + kirim teks "Cara pakai di HP" (di bawah) ke pengguna.
+7. **Revisi.** Kalau pengguna minta ubah adegan, ubah blok REEL lalu kirim ulang file utuh.
+
+## Gaya (wajib)
+
+- **Dodi** adalah tokoh utama di hampir setiap adegan dan selalu *beraksi* sesuai kalimat (menunjuk, kaget, lari, duduk, bersorak), bukan hanya berdiri.
+- Dunia cerah, warna jenuh, kamera selalu bergerak pelan (`handheld` + sedikit zoom), parallax latar, transisi whip dengan motion blur (otomatis).
+- Hook langsung beraksi di frame pertama.
+- Teks layar otomatis dari naskah: 1 sampai 2 kata, huruf kecil, tanpa tanda baca. Teks lain di layar hanya untuk nama konsep penting (`label()`), jangan kalimat.
+- Benturan = `burst` + `shake` + `flash` + `sfx('impact')`. Muncul = `popIn` + `sfx('swish')`. Ketemu jawaban = `sparkle` + `sfx('ding')`.
+- SFX di bawah suara (sudah diatur), musik pelan dan otomatis mengecil saat ada suara. Jangan pakai bunyi seperti laser.
+- Tanpa em dash di layar.
+
+## Tata letak (kanvas 1080 × 1920)
+
+- **Pita teks layar y 1250 sampai 1420. Wajah tidak boleh masuk.** Untuk Dodi berdiri di `y` dengan ukuran `s`: dagu = `y − 0.565·s`, ubun-ubun = `y − 0.93·s`. Pastikan dagu ≤ 1240 (atau seluruh kepala di bawah 1430).
+  - Contoh aman: `s: 860, y: 1640` (close-up), `s: 600, y: 1590`, `s: 380, y: 1380`.
+- Area aman Instagram/TikTok: x 100 sampai 980, y 220 sampai 1500. Properti penting di dalamnya.
+- Duduk (`pose: 'sit'`): kaki menyentuh tanah kalau `y = tanah + 0.15·s`; pantat ada di `tanah − 0.15·s` (gambar bangku/batu setinggi itu).
+- Hadap kiri: `flip: -1`. Tampak samping otomatis untuk pose `run`, `walk`, `sit`, `stand`.
+
+## API ringkas (untuk menulis blok REEL)
+
+**Isi REEL**
+```js
+const REEL = { title, file, lang: 'en-US'|'id-ID', voice: 'am_michael', voiceSpeed: 1, music: 'ceria'|'misteri'|'tenang'|false, script: [ 'kalimat 1', ... ], captions: { 'twenty five': '25' }, speed: 1 };
+```
+- `captions` = ganti teks layar (mis. angka ditulis angka). `speed` > 1 memperlambat perkiraan tempo kalau suara belum dibuat.
+- `voice` = suara Kokoro awal (pengguna bisa mengganti di menu). Pilihan: `am_michael` (pria US, netral, default), `am_adam`, `am_fenrir` (berat, cocok sejarah/misteri), `am_puck` (ceria), `af_heart` (wanita US), `af_bella`, `af_nicole` (lembut), `bm_george` (pria UK, cocok sejarah), `bm_fable`, `bf_emma` (wanita UK). Kokoro hanya untuk bahasa Inggris; untuk video bahasa Indonesia pengguna merekam suaranya sendiri.
+- `music`: `misteri` untuk sejarah/misteri, `ceria` untuk fakta lucu/sains, `tenang` untuk topik sedih/serius.
+
+**Adegan**
+```js
+scene({ s: 3, w: 0, off: 0, tr: 'whip'|'cut'|'flash', draw(ctx, lt, t, d) { ... } });
+```
+- Adegan mulai saat kata ke-`w` kalimat ke-`s` diucapkan (adegan pertama selalu di 0). `tr` = transisi KELUAR adegan ini.
+- `lt` = detik sejak adegan mulai, `t` = detik global, `d` = durasi adegan.
+- `T(s, w)` = detik saat kata ke-w kalimat ke-s mulai (w negatif dihitung dari belakang, `T(2,-1)` = kata terakhir). `TE(s, w)` = saat kata itu selesai. **Selalu pakai `T()` untuk mengatur aksi ke kata**, karena waktunya ikut menyesuaikan suara yang direkam.
+- `sfx(jenis, s, w, offset = 0, gain = 1)` di luar `scene`. Jenis: `whoosh swish thud impact tap ding sparkle rise step cash buzz`. Whoosh transisi whip sudah otomatis.
+
+**Kamera & gerak**
+- `CAM(ctx, {x, y, z, r}, par)`: titik (x,y) dunia di tengah layar, `z` zoom, `r` miring. Panggil `CAM(ctx, cam, .05)` untuk langit, `.2` awan, `.5` bukit jauh, `1` dunia depan (parallax).
+- `handheld(t, amp)` → [dx, dy]. `shake(t, amp, freq)`.
+- `kf(t, [[t0, v0], [t1, v1, easing?], ...])` keyframe (angka atau array). `popIn(t, t0, dur)` 0→1 memantul. `inv(a, b, v)` 0..1. `lerp`, `clamp`, `ease`, `easeOut`, `easeIn`, `backOut`, `elastic`, `rng(seed)`.
+
+**Dodi**
+```js
+drawDodi(ctx, { x, y, s, t, pose, face, look: [x, y], turn, flip, tilt, lean, air, squash, alpha, talk, view: 'back', hold(ctx, hx, hy, ang) {}, acc(ctx, hx, hy, turn) {}, arms, legs, pal, hair, glasses, shadow, seed });
+```
+- Selalu isi `t` (untuk kedip & animasi pose). `y` = posisi telapak kaki. `s` = tinggi badan dalam piksel.
+- `pose`: `idle wave point pointUp cheer shock think shrug hips explain hold facepalm sad jump fall run walk stand sit`.
+- `face`: `smile happy grin laugh smug shock think angry sad worried neutral sleepy determined wow scared`, atau objek `{ e: 'open|wide|happy|closed|half|angry', b: 'flat|up|high|angry|worry|one', m: 'smile|grin|laugh|smirk|teeth|O|hmm|frown|wobble|flat' }`.
+- `look` arah bola mata (−1..1). `turn` −1..1 memutar wajah. `air` = piksel melayang (bayangan tetap di tanah). `talk: true` = mulut bergerak ikut suara.
+- `hold(ctx, hx, hy, ang)` menggambar benda di tangan kanan, dalam satuan badan (1 = tinggi badan). Contoh HP: `rrect(ctx, hx - .03, hy - .1, .06, .11, .01); ctx.fillStyle = '#222'; ctx.fill();`
+- `arms: { R: [a1, a2] }` sudut bahu & siku manual, atau `R: { ik: [x, y] }` tangan ke titik (satuan badan, kaki di 0, kepala ~ −0.75).
+- Tokoh lain: `drawDodi(ctx, { ...CAST.RINA, x, y, s, t, ... })`. Tersedia `CAST.RINA` (rambut panjang, hoodie biru), `CAST.BUDI` (rambut pendek, hoodie hijau), `CAST.PAK` (rambut putih, kacamata). Bisa juga `pal: { top: '#2f7de1', top2: '#1f55a6', hair: '#111' }`, `hair: 'wavy'|'short'|'long'|'none'`, `glasses: false`.
+
+**Dunia** (koordinat dunia, panggil setelah `CAM`)
+`sky(ctx, atas, bawah)`, `sky3(ctx, a, b, c)`, `sun(ctx, x, y, r, t, warna, glow)`, `cloud(ctx, x, y, s, seed, alpha)`, `ground(ctx, y, c1, c2)`, `hill(ctx, cx, y, w, h, warna)`, `tree(ctx, x, y, s, t)`, `bush(ctx, x, y, s)`, `house(ctx, x, y, s, dinding, atap)`, `city(ctx, dasarY, seed, warna)`, `room(ctx, { floorY, wall, floor, window, winX, winY, winSky, frame })`, `table(ctx, x, y, s)`, `laptop(ctx, x, y, s, layar(ctx, w, h))`, `phone(ctx, x, y, s, rot, layar(ctx, w, h))`, `board(ctx, x, y, w, h, judul)`, `arrow(ctx, x1, y1, x2, y2, progres, warna, tebal, lengkung)`, `bars(ctx, x, y, w, h, nilai[], progres)`, `label(ctx, teks, x, y, size, bg, fg, skala)`, `icon(ctx, nama, x, y, s, t)` dengan nama `q ex check cross bulb heart coin money clock star zzz fire`.
+
+**Efek**
+`burst(ctx, x, y, r, n, warna)`, `flash(ctx, alpha)`, `sparkle(ctx, x, y, r, a)`, `puff(ctx, x, y, r, a)`, `sweat(ctx, x, y, s, a)`, `speedLines(ctx, t, a)`, `motionLines(ctx, x, y, arah, panjang)`.
+
+**Bentuk dasar**
+`circle`, `ellipse`, `rrect`, `poly`, `line`, `fs(ctx, isi, tebal, garis)`, `text(ctx, str, x, y, size, isi, garis, tebalGaris)`. Properti khusus video (prisma, molekul, kapal, dll.) ditulis sebagai fungsi di blok REEL, lihat contoh `molecule()` dan `wave()`.
+
+## Daftar cek sebelum menyerahkan
+
+- [ ] Jumlah `scene` ≈ jumlah kalimat, indeks `s` urut naik, semua `s` < jumlah kalimat, `w` < jumlah kata kalimat itu.
+- [ ] Setiap adegan menggambar latar penuh dulu (`sky`/`room`/warna) supaya tidak ada area hitam saat kamera bergerak.
+- [ ] Dagu Dodi ≤ 1240 di setiap adegan (rumus di atas).
+- [ ] Setiap aksi penting dikunci ke kata dengan `T(s, w)`, bukan detik mati.
+- [ ] Tidak ada kalimat panjang di layar; hanya `label()` untuk nama konsep.
+- [ ] ENGINE tidak diubah satu karakter pun. Kurung kurawal REEL seimbang.
+- [ ] Nama file pendek, huruf kecil, pakai tanda hubung.
+
+## Cara pakai di HP (kirim teks ini ke pengguna)
+
+1. Unduh file `.html`, lalu buka dengan **Chrome** (dari aplikasi Files: ketuk file → Buka dengan → Chrome). Kalau tombol di dalam aplikasi Claude tidak jalan, selalu buka lewat Chrome.
+2. Ketuk **▶ Putar** untuk melihat animasi (suara masih perkiraan).
+3. Ketuk **🤖 Suara AI (Kokoro)**. Pertama kali akan mengunduh model suara ±90 MB (pakai Wi-Fi), lalu membuat suara kalimat demi kalimat, biasanya 1 sampai 4 menit di HP. Suara bisa diganti dari menu 🗣 di sebelahnya, lalu ketuk 🤖 lagi. Animasi dan teks otomatis menyesuaikan suara.
+   - Alternatif: **🎙 Rekam suara saya** (bacakan naskah yang muncul, jeda di setiap titik, lalu **■ Selesai**), atau **📁 Pakai file suara** (MP3 dari ElevenLabs/CapCut).
+4. Ketuk **▶ Putar** lagi untuk cek, lalu **⏺ Rekam video**. Biarkan layar menyala sampai selesai.
+5. Ketuk **⬇ Simpan video** atau **↗ Bagikan** (ke Galeri, WhatsApp, CapCut). File berformat MP4 (Chrome baru) atau WebM. Kalau WebM, impor ke CapCut lalu ekspor ulang jadi MP4.
+6. **Kualitas: 1080p** untuk hasil lebih tajam (HP lama bisa patah-patah, pakai 720p).
+- 🔊 **Suara HP** hanya untuk pratinjau, tidak ikut terekam di video.
+
+## Masalah umum
+
+- *Layar hitam / tidak bergerak*: ada error di blok REEL. Periksa ejaan fungsi dan kurung. Paling sering: `s` adegan melebihi jumlah kalimat, atau properti dipanggil sebelum didefinisikan.
+- *Teks tidak sinkron*: kalimat di naskah harus sama persis dengan yang dibaca, dan beri jeda jelas di setiap titik saat merekam.
+- *Mikrofon ditolak*: buka lewat Chrome dan izinkan mikrofon, atau rekam di aplikasi perekam lalu pakai 📁.
+- *Video tanpa suara*: suara HP (TTS) memang tidak terekam; pakai 🤖, 🎙, atau 📁.
+- *Suara AI gagal / lama sekali*: butuh internet untuk unduhan pertama; tutup aplikasi lain; HP lama bisa butuh beberapa menit. Kalau tetap gagal, pakai 🎙 atau 📁.
+
+## TEMPLATE
+
+Salin persis. Ganti hanya blok REEL.
+
+```html
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Why is the sky blue?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700;800&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box}body{margin:0;background:#000;color:#fff;font-family:Arial Black, sans-serif}
-#top{background:#ffcc00;color:#000;padding:10px;text-align:center;font-weight:900}
-#c{width:100%;height:60vh;display:block;background:#f0e6c8}
-#menu{padding:10px;background:#1e1e1e}
-select,input,button,textarea{width:100%;padding:10px;margin:4px 0;border-radius:8px;border:none;font-weight:700;font-family:Arial}
-button{cursor:pointer} .row{display:flex;gap:6px}.row>*{flex:1}
-small{color:#ffcc00;font-size:11px}
-</style>
-</head>
-<body>
-<div id="top">🎨 KONON V5 - 2D PERSIS @kononkatanyaya</div>
-<canvas id="c" width="720" height="1280"></canvas>
-<div id="menu">
-<div class="row">
-<select id="kar" onchange="draw()"><option value="pakSobri">Pak Sobri - Rambut Abu</option><option value="buTini">Bu Tini - Rambut Hitam</option><option value="pakRT">Pak RT + Bu Tini</option><option value="jamnya">Ibu Jamnya - Kaget</option><option value="kembalian">Pasangan - Kembalian</option><option value="ember">Ember Kapur</option></select>
-<select id="bg" onchange="draw()"><option value="kampung">Kampung</option><option value="dapur">Dapur</option><option value="pos">Pos Ronda</option></select>
+:root{color-scheme:dark}*{box-sizing:border-box}
+body{margin:0;background:#15131a;color:#f3f1f7;font:15px/1.4 system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:10px 12px 28px}
+h1{font-size:16px;margin:4px 0 8px;font-weight:700;text-align:center}
+#stage{width:min(100%,calc(66vh*9/16));aspect-ratio:9/16;background:#000;border-radius:14px;overflow:hidden;box-shadow:0 8px 30px #0008}
+#stage canvas{width:100%;height:100%;display:block}
+#bar{width:min(100%,520px);margin-top:10px;display:flex;flex-direction:column;gap:8px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+button,.btn,select{flex:1 1 0;min-width:120px;padding:12px 10px;border:0;border-radius:12px;background:#2b2735;color:#fff;font:600 14px system-ui;text-align:center;cursor:pointer;text-decoration:none}
+.main{background:#e0453a}.on{background:#3a8d5c}
+input[type=range]{width:100%;accent-color:#e0453a}
+#status{font-size:13px;color:#b9b4c6;min-height:1.4em;text-align:center}
+#out{display:none;flex-direction:column;gap:8px}#out video{width:100%;border-radius:12px;background:#000}
+#prompter{display:none;position:fixed;inset:0;background:#0d0c10f5;z-index:9;padding:20px 20px 90px;overflow:auto}
+#prompter p{font-size:23px;line-height:1.5;margin:0 0 16px}
+#prompter .hint{font-size:14px;color:#ff8a80}
+#bStop{position:fixed;left:20px;right:20px;bottom:20px;background:#e0453a;font-size:17px;padding:16px}
+</style></head><body>
+<h1 id="ttl"></h1>
+<div id="stage"><canvas id="c"></canvas></div>
+<div id="bar">
+ <input id="scrub" type="range" min="0" max="1000" value="0">
+ <div class="row"><button id="bPlay" class="main">▶ Putar</button><button id="bRec">⏺ Rekam video</button></div>
+ <div class="row"><button id="bAi" class="main">🤖 Suara AI (Kokoro)</button><select id="sVoice" class="btn"></select></div>
+ <div class="row"><button id="bMic">🎙 Rekam suara saya</button><label class="btn">📁 Pakai file suara<input id="fVo" type="file" accept="audio/*" hidden></label></div>
+ <div class="row"><button id="bTts">🔊 Suara HP: mati</button><button id="bHd">Kualitas: 720p</button></div>
+ <div id="status">Ketuk ▶ Putar untuk melihat animasi.</div>
+ <div id="out"><video id="vid" controls playsinline></video><div class="row"><a id="dl" class="btn main">⬇ Simpan video</a><button id="bShare">↗ Bagikan</button></div></div>
 </div>
-<input id="teks" value="Pak Sobri" oninput="draw()" placeholder="Teks kuning bawah">
-<textarea id="judul" rows="2">Konon, ada kampung yang warganya wajib bersin bareng setiap jam tujuh pagi</textarea>
-<div class="row">
-<button onclick="draw()" style="background:#ffcc00;color:#000">🔄 RENDER 2D</button>
-<button onclick="save()" style="background:#00e676">💾 SAVE PNG</button>
-</div>
-<button onclick="buatVideo()" id="btnV" style="background:#ff0000;color:#fff">🎥 BUAT VIDEO SHORTS</button>
-<small id="status">Ini baru PERSIS channel Konon. Outline hitam tebal + teks kuning.</small>
-</div>
+<div id="prompter"><p class="hint">● Merekam. Bacakan pelan dan jelas, beri jeda sebentar di setiap titik.</p><div id="ptext"></div><button id="bStop">■ Selesai merekam</button></div>
 <script>
-const canvas=document.getElementById('c'); const ctx=canvas.getContext('2d');
-function drawBG(type){
- if(type=='kampung'){ ctx.fillStyle='#f0e6c8'; ctx.fillRect(0,0,720,1280); ctx.fillStyle='#a8d5a2'; ctx.fillRect(0,800,720,480); ctx.fillStyle='#fff'; ctx.fillRect(50,150,620,600); ctx.strokeStyle='#000'; ctx.lineWidth=4; ctx.strokeRect(50,150,620,600); }
- else if(type=='dapur'){ ctx.fillStyle='#ffe4b5'; ctx.fillRect(0,0,720,1280); ctx.fillStyle='#deb887'; ctx.fillRect(0,900,720,380); }
- else { ctx.fillStyle='#d2b48c'; ctx.fillRect(0,0,720,1280); }
- // tiang
- ctx.fillStyle='#8b4513'; ctx.fillRect(100,0,25,1280);
+// ===================== ENGINE v1 — SALIN PERSIS, JANGAN DIUBAH =====================
+// ---------- dasar ----------
+const W = 1080, H = 1920, TAU = Math.PI * 2, INK = '#221c22';
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v)), lerp = (a, b, t) => a + (b - a) * t, inv = (a, b, v) => clamp((v - a) / (b - a));
+const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2, easeOut = t => 1 - Math.pow(1 - t, 3), easeIn = t => t * t * t;
+const backOut = t => { const c = 1.9; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
+const elastic = t => t <= 0 ? 0 : t >= 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - .75) * TAU / 3) + 1;
+function kf(t, keys, fn = ease) {
+  if (t <= keys[0][0]) return keys[0][1];
+  for (let i = 0; i < keys.length - 1; i++) {
+    const [t0, v0] = keys[i], [t1, v1] = keys[i + 1];
+    if (t <= t1) { const e = (keys[i + 1][2] || fn)(inv(t0, t1, t)); return Array.isArray(v0) ? v0.map((x, j) => lerp(x, v1[j], e)) : lerp(v0, v1, e); }
+  }
+  return keys[keys.length - 1][1];
 }
-function drawChar_PakSobri(x,y){
- // badan
- ctx.fillStyle='#5a8fd4'; ctx.strokeStyle='#000'; ctx.lineWidth=6; ctx.beginPath(); ctx.roundRect(x-80,y+60,160,140,20); ctx.fill(); ctx.stroke();
- // kepala
- ctx.fillStyle='#ffdbac'; ctx.beginPath(); ctx.arc(x,y,90,0,Math.PI*2); ctx.fill(); ctx.stroke();
- // rambut abu
- ctx.fillStyle='#8a8a8a'; ctx.beginPath(); ctx.arc(x,y-50,90,Math.PI,Math.PI*2); ctx.fill(); ctx.stroke();
- // mata
- ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(x-30,y+10,12,0,Math.PI*2); ctx.arc(x+30,y+10,12,0,Math.PI*2); ctx.fill();
- // alis
- ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(x-50,y-10); ctx.lineTo(x-15,y-5); ctx.moveTo(x+15,y-5); ctx.lineTo(x+50,y-10); ctx.stroke();
+function rng(seed) { let s = (seed * 9301 + 49297) >>> 0 || 1; return () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return ((s >>> 0) % 100000) / 100000; }; }
+function shake(t, amp, freq = 1, seed = 0) { return [amp * (Math.sin(t * 13.1 * freq + seed) * .6 + Math.sin(t * 7.3 * freq + 1.3 + seed) * .4), amp * (Math.sin(t * 11.7 * freq + 2.1 + seed) * .6 + Math.sin(t * 5.9 * freq + .4 + seed) * .4)]; }
+const handheld = (t, a = 4) => shake(t * .35, a, 1, 2);
+const popIn = (t, t0, d = .35) => t < t0 ? 0 : backOut(clamp((t - t0) / d));
+const hexA = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
+// ---------- bentuk ----------
+function circle(ctx, x, y, r) { ctx.beginPath(); ctx.arc(x, y, Math.max(.01, r), 0, TAU); }
+function ellipse(ctx, x, y, rx, ry, rot = 0) { ctx.beginPath(); ctx.ellipse(x, y, Math.max(.001, rx), Math.max(.001, ry), rot, 0, TAU); }
+function rrect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+function poly(ctx, pts, close = true) { ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); if (close) ctx.closePath(); }
+function fs(ctx, fill, lw = 6, stroke = INK) { if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (lw > 0) { ctx.lineWidth = lw; ctx.strokeStyle = stroke; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke(); } }
+function line(ctx, x1, y1, x2, y2, lw, col = INK) { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineWidth = lw; ctx.strokeStyle = col; ctx.lineCap = 'round'; ctx.stroke(); }
+function text(ctx, str, x, y, size, fill = '#fff', stroke = INK, sw = 0, weight = 800, align = 'center') {
+  ctx.font = `${weight} ${size}px Poppins, system-ui, sans-serif`; ctx.textAlign = align; ctx.textBaseline = 'middle';
+  if (sw) { ctx.lineWidth = sw; ctx.strokeStyle = stroke; ctx.lineJoin = 'round'; ctx.strokeText(str, x, y); }
+  ctx.fillStyle = fill; ctx.fillText(str, x, y);
 }
-function drawChar_BuTini(x,y){
- ctx.fillStyle='#8ecae6'; ctx.strokeStyle='#000'; ctx.lineWidth=6; ctx.beginPath(); ctx.roundRect(x-70,y+60,140,160,15); ctx.fill(); ctx.stroke();
- ctx.fillStyle='#ffdbac'; ctx.beginPath(); ctx.arc(x,y,85,0,Math.PI*2); ctx.fill(); ctx.stroke();
- ctx.fillStyle='#2b2b2b'; ctx.beginPath(); ctx.arc(x,y-30,85,Math.PI,Math.PI*2); ctx.fill(); ctx.stroke();
- ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(x-25,y+10,11,0,Math.PI*2); ctx.arc(x+25,y+10,11,0,Math.PI*2); ctx.fill();
-}
-function drawTeksKuning(teks){
- ctx.font='900 42px Arial Black'; ctx.textAlign='center';
- ctx.strokeStyle='#000'; ctx.lineWidth=10; ctx.lineJoin='round';
- ctx.strokeText(teks, 360, 1050);
- ctx.fillStyle='#ffeb3b'; ctx.fillText(teks, 360, 1050);
-}
-function draw(){
- const kar=document.getElementById('kar').value; const bg=document.getElementById('bg').value; const teks=document.getElementById('teks').value;
- ctx.clearRect(0,0,720,1280);
- drawBG(bg);
- if(kar=='pakSobri'){ drawChar_PakSobri(360,550); }
- else if(kar=='buTini'){ drawChar_BuTini(360,550); }
- else if(kar=='jamnya'){ // ibu kaget
-  drawBG('kampung'); drawChar_BuTini(360,550);
-  // mulut menganga
-  ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(360,600,18,0,Math.PI*2); ctx.fill();
- }
- else if(kar=='pakRT'){ drawChar_PakSobri(250,550); drawChar_BuTini(470,550); }
- else if(kar=='kembalian'){ // dua orang
-  drawChar_PakSobri(280,550); drawChar_BuTini(480,570);
-  // toples
-  ctx.fillStyle='#fff'; ctx.strokeStyle='#000'; ctx.lineWidth=5; ctx.beginPath(); ctx.roundRect(280,750,160,120,10); ctx.fill(); ctx.stroke();
-  ctx.fillStyle='#c44'; ctx.beginPath(); ctx.roundRect(300,730,120,20,10); ctx.fill(); ctx.stroke();
- }
- else if(kar=='ember'){ // ember kapur + tangan
-  ctx.fillStyle='#fff'; ctx.fillRect(0,0,720,1280);
-  ctx.fillStyle='#2ec4b6'; ctx.strokeStyle='#000'; ctx.lineWidth=8; ctx.beginPath(); ctx.arc(360,750,250,0,Math.PI*2); ctx.fill(); ctx.stroke();
-  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(360,750,220,0,Math.PI*2); ctx.fill();
-  // tangan putih kartun
-  ctx.fillStyle='#fff'; ctx.strokeStyle='#000'; ctx.lineWidth=6;
-  ctx.beginPath(); ctx.moveTo(360,400); ctx.lineTo(200,500); ctx.lineTo(250,520); ctx.lineTo(360,450); ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.arc(360,400,50,0,Math.PI*2); ctx.fill(); ctx.stroke();
- }
- drawTeksKuning(teks);
- document.getElementById('status').innerText='Preview: '+kar+' | Teks: '+teks;
-}
-function save(){ const a=document.createElement('a'); a.download='konon-'+document.getElementById('teks').value+'.png'; a.href=canvas.toDataURL(); a.click(); }
-let recorder,chunks,stream;
-async function buatVideo(){
- chunks=[]; stream=canvas.captureStream(30); recorder=new MediaRecorder(stream,{mimeType:'video/webm'});
- recorder.ondataavailable=e=>{if(e.data.size>0) chunks.push(e.data)};
- recorder.onstop=()=>{ const blob=new Blob(chunks,{type:'video/webm'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='SHORTS-KONON-2D.webm'; a.click(); };
- recorder.start();
- const scenes=['pakSobri','jamnya','kembalian','buTini','ember']; const teksList=['Pak Sobri','jamnya','kembalian','Bu Tini','ember kapur'];
- for(let i=0;i<5;i++){ document.getElementById('kar').value=scenes[i]; document.getElementById('teks').value=teksList[i]; draw(); await new Promise(r=>setTimeout(r,1200)); }
- recorder.stop();
-}
-draw();
-window.onresize=()=>{draw();};
-</script>
-</body>
-</html>
+// ---------- kanvas & kamera ----------
+let K = 720 / 1080;
+const cv = document.getElementById('c'), out = cv.getContext('2d'), buf = document.createElement('canvas'), bctx = buf.getContext('2d');
+function setRes(k) { K = k; cv.width = buf.width = Math.round(W * K); cv.height = buf.height = Math.round(H * K); }
+function screen(ctx) { ctx.setTransform(K, 0, 0, K, 0, 0); }
+// c = {x, y, z, r}: titik (x,y) dunia ada di tengah layar, z = zoom, r = miring. par < 1 = lapisan jauh (parallax)
+function CAM(ctx, c = {}, par = 1) {
+  const z = 1 + ((c.z || 1) - 1) *
